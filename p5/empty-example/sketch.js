@@ -4,10 +4,17 @@ const CANVAS_WIDTH = 500;
 const N_SHEEP = 10;
 const CIRCLE_SIZE = 25;
 
-const SHEEP_SIGHT = 150;
-const SHEEP_VELOCITY = 0.5;
+const SHEEP_SIGHT_FOR_DOG = 150;
+const SHEEP_SIGHT_FOR_OTHER_SHEEP = 150;
 
+const SHEEP_VELOCITY = 1;
 const DOG_VELOCITY = 2;
+
+const IMPORTANCE_DOG = 1;
+const IMPORTANCE_BEST_SHEEP = 2;
+
+const SHEEP_REPULSION_FACTOR = 0.5;
+
 class Sheep {
   constructor(x, y, index){
     this.position = createVector(x, y);
@@ -17,7 +24,7 @@ class Sheep {
 
   render(){
     let c = color('white');
-    if(this.position.dist(dog.position) < SHEEP_SIGHT){
+    if(this.position.dist(dog.position) < SHEEP_SIGHT_FOR_DOG){
       c = color('green');
     }
     stroke(0)
@@ -28,13 +35,13 @@ class Sheep {
     line(this.position.x, this.position.y, this.bestNeighborPosition.x, this.bestNeighborPosition.y)
 
     noFill();
-    circle(this.position.x, this.position.y, SHEEP_SIGHT*2)
+    circle(this.position.x, this.position.y, SHEEP_SIGHT_FOR_DOG*2)
   }
 
   nearestBestNeighbor(allSheep, dog){
     const myDistanceToDog = this.position.dist(dog.position);
 
-    if(myDistanceToDog > SHEEP_SIGHT){
+    if(myDistanceToDog > SHEEP_SIGHT_FOR_DOG){
       return this.position;
     }
 
@@ -46,7 +53,7 @@ class Sheep {
         const sheepDistanceToDog = allSheep[i].position.dist(dog.position);
         const sheepDistanceToMe = allSheep[i].position.dist(this.position);
         if(sheepDistanceToDog > bestDistance && 
-          sheepDistanceToMe < SHEEP_SIGHT &&
+          sheepDistanceToMe < SHEEP_SIGHT_FOR_OTHER_SHEEP &&
           sheepDistanceToMe > CIRCLE_SIZE){
           bestNeighborIndex = i;
           bestDistance = sheepDistanceToDog;
@@ -57,27 +64,54 @@ class Sheep {
     return allSheep[bestNeighborIndex].position;
   }
 
-  move(){
-    // let dir = this.bestNeighborPosition.sub(this.position);
-    let sheepAttraction = p5.Vector.sub(this.bestNeighborPosition, this.position);
-    sheepAttraction.setMag(5);
+  move(allSheep){
+    // Sheep Attraction
+    let selfishAttractionToBest = p5.Vector.sub(this.bestNeighborPosition, this.position);
+    const distanceBestToDog = this.bestNeighborPosition.dist(dog.position);
+    const distanceToBest = this.bestNeighborPosition.dist(this.position);
+    selfishAttractionToBest.setMag(1000000000000 * distanceBestToDog*Math.pow(Math.E, -distanceToBest));
 
+
+    //Dog Repulsion
     const distanceToDog = this.position.dist(dog.position);
-
     let dogRepulsion = p5.Vector.sub(this.position, dog.position);
-    const dogRepulstionMagnitude = distanceToDog < SHEEP_SIGHT ? 1 : 0;
+    const dogRepulstionMagnitude = SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_DOG*SHEEP_SIGHT_FOR_DOG)));
     dogRepulsion.setMag(dogRepulstionMagnitude);
+    console.log("Dog Repulsion", dogRepulstionMagnitude)
+    let resultingForce = selfishAttractionToBest.add(dogRepulsion)
+    resultingForce.setMag(SHEEP_VELOCITY)
 
-    let resultingForce = sheepAttraction.add(dogRepulsion)
-    resultingForce.setMag(SHEEP_VELOCITY*(SHEEP_SIGHT/distanceToDog - 1))
+    this.position.add(dogRepulsion);
 
-    // Update the position with the acceleration
-    this.position.add(resultingForce);
+    // SHeep Repulsion
+    // for (let sheep of allSheep){
+    //   if(sheep.position != this.position){
+    //     const sheepRepulsion = p5.Vector.sub(this.position, sheep.position);
+    //     sheepRepulsion.setMag(SHEEP_REPULSION_FACTOR*SHEEP_VELOCITY * 1/(sheep.position.dist(this.position)));
+    //     this.position.add(sheepRepulsion);
+    //   }
+    // }
+  }
+
+  checkCollision(){
+    if(this.position.x + CIRCLE_SIZE/2 > CANVAS_WIDTH){
+      this.position.x = CANVAS_WIDTH - CIRCLE_SIZE/2;
+    }
+    if(this.position.x - CIRCLE_SIZE/2 < 0){
+      this.position.x = CIRCLE_SIZE/2;
+    }
+    if(this.position.y + CIRCLE_SIZE/2 > CANVAS_HEIGHT){
+      this.position.y = CANVAS_HEIGHT - CIRCLE_SIZE/2;
+    }
+    if(this.position.y - CIRCLE_SIZE/2 < 0){
+      this.position.y = CIRCLE_SIZE/2;
+    }
   }
 
   run(allSheep, dog){
     this.bestNeighborPosition = this.nearestBestNeighbor(allSheep, dog)
-    this.move();
+    this.move(allSheep);
+    this.checkCollision();
     this.render();
   }
 }
