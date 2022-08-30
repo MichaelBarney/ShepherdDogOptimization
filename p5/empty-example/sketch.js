@@ -1,8 +1,8 @@
 const CANVAS_HEIGHT = 500;
 const CANVAS_WIDTH = 500;
 
-const N_SHEEP = 10;
-const CIRCLE_SIZE = 25;
+const N_SHEEP = 50;
+const CIRCLE_SIZE = 10;
 
 const SHEEP_SIGHT_FOR_DOG = 150;
 const SHEEP_SIGHT_FOR_OTHER_SHEEP = 150;
@@ -41,9 +41,9 @@ class Sheep {
   nearestBestNeighbor(allSheep, dog){
     const myDistanceToDog = this.position.dist(dog.position);
 
-    if(myDistanceToDog > SHEEP_SIGHT_FOR_DOG){
-      return this.position;
-    }
+    // if(myDistanceToDog > SHEEP_SIGHT_FOR_DOG){
+    //   return this.position;
+    // }
 
     let bestNeighborIndex = this.index;
     let bestDistance = myDistanceToDog;
@@ -65,32 +65,30 @@ class Sheep {
   }
 
   move(allSheep){
+    const distanceToDog = this.position.dist(dog.position);
+
     // Sheep Attraction
     let selfishAttractionToBest = p5.Vector.sub(this.bestNeighborPosition, this.position);
     const distanceBestToDog = this.bestNeighborPosition.dist(dog.position);
     const distanceToBest = this.bestNeighborPosition.dist(this.position);
-    selfishAttractionToBest.setMag(1000000000000 * distanceBestToDog*Math.pow(Math.E, -distanceToBest));
-
+    selfishAttractionToBest.setMag(SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_OTHER_SHEEP*SHEEP_SIGHT_FOR_OTHER_SHEEP))));
+    this.position.add(selfishAttractionToBest);
 
     //Dog Repulsion
-    const distanceToDog = this.position.dist(dog.position);
     let dogRepulsion = p5.Vector.sub(this.position, dog.position);
     const dogRepulstionMagnitude = SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_DOG*SHEEP_SIGHT_FOR_DOG)));
     dogRepulsion.setMag(dogRepulstionMagnitude);
-    console.log("Dog Repulsion", dogRepulstionMagnitude)
-    let resultingForce = selfishAttractionToBest.add(dogRepulsion)
-    resultingForce.setMag(SHEEP_VELOCITY)
-
     this.position.add(dogRepulsion);
 
-    // SHeep Repulsion
-    // for (let sheep of allSheep){
-    //   if(sheep.position != this.position){
-    //     const sheepRepulsion = p5.Vector.sub(this.position, sheep.position);
-    //     sheepRepulsion.setMag(SHEEP_REPULSION_FACTOR*SHEEP_VELOCITY * 1/(sheep.position.dist(this.position)));
-    //     this.position.add(sheepRepulsion);
-    //   }
-    // }
+    // Sheep Repulsion
+    for (let sheep of allSheep){
+      if(sheep.index != this.index){
+        const distanceToSheep = sheep.position.dist(this.position);
+        const sheepRepulsion = p5.Vector.sub(this.position, sheep.position);
+        sheepRepulsion.setMag(SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToSheep*distanceToSheep/(CIRCLE_SIZE*CIRCLE_SIZE))));
+        this.position.add(sheepRepulsion);
+      }
+    }
   }
 
   checkCollision(){
