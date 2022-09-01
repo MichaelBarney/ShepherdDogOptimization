@@ -1,19 +1,15 @@
+
 const CANVAS_HEIGHT = 500;
 const CANVAS_WIDTH = 500;
 
-const N_SHEEP = 50;
-const CIRCLE_SIZE = 10;
+const N_SHEEP = 20;
+const CIRCLE_SIZE = 20;
 
 const SHEEP_SIGHT_FOR_DOG = 150;
 const SHEEP_SIGHT_FOR_OTHER_SHEEP = 150;
 
 const SHEEP_VELOCITY = 1;
-const DOG_VELOCITY = 2;
-
-const IMPORTANCE_DOG = 1;
-const IMPORTANCE_BEST_SHEEP = 2;
-
-const SHEEP_REPULSION_FACTOR = 0.5;
+const DOG_VELOCITY = 3;
 
 class Sheep {
   constructor(x, y, index){
@@ -25,7 +21,7 @@ class Sheep {
   render(){
     let c = color('white');
     if(this.position.dist(dog.position) < SHEEP_SIGHT_FOR_DOG){
-      c = color('green');
+      // c = color('green');
     }
     stroke(0)
     fill(c);
@@ -35,50 +31,49 @@ class Sheep {
     line(this.position.x, this.position.y, this.bestNeighborPosition.x, this.bestNeighborPosition.y)
 
     noFill();
-    circle(this.position.x, this.position.y, SHEEP_SIGHT_FOR_DOG*2)
+    // circle(this.position.x, this.position.y, SHEEP_SIGHT_FOR_DOG*2)
   }
 
-  nearestBestNeighbor(allSheep, dog){
+  nearestBestNeighbor(allSheep, dog, obstacles){
     const myDistanceToDog = this.position.dist(dog.position);
 
-    // if(myDistanceToDog > SHEEP_SIGHT_FOR_DOG){
-    //   return this.position;
-    // }
 
-    let bestNeighborIndex = this.index;
     let bestDistance = myDistanceToDog;
+
+    let bestSheepNeighbor = this;
 
     for(let i = 0; i < N_SHEEP; i++){
       if(i != this.index){
-        const sheepDistanceToDog = allSheep[i].position.dist(dog.position);
-        const sheepDistanceToMe = allSheep[i].position.dist(this.position);
-        if(sheepDistanceToDog > bestDistance && 
-          sheepDistanceToMe < SHEEP_SIGHT_FOR_OTHER_SHEEP &&
-          sheepDistanceToMe > CIRCLE_SIZE){
-          bestNeighborIndex = i;
-          bestDistance = sheepDistanceToDog;
+        const sheepCandidate = allSheep[i];
+        const candidateDistanceToDog = sheepCandidate.position.dist(dog.position);
+        const candidateDistanceToMe = sheepCandidate.position.dist(this.position);
+        if(candidateDistanceToDog > bestDistance && 
+          candidateDistanceToMe < SHEEP_SIGHT_FOR_OTHER_SHEEP && 
+          !obstacleInbetween(this, sheepCandidate, obstacles)){
+          bestSheepNeighbor = sheepCandidate;
+          bestDistance = candidateDistanceToDog;
         }
       }
     }
 
-    return allSheep[bestNeighborIndex].position;
+    return bestSheepNeighbor.position;
   }
 
-  move(allSheep){
+  move(allSheep, obstacles){
     const distanceToDog = this.position.dist(dog.position);
 
-    // Sheep Attraction
     let selfishAttractionToBest = p5.Vector.sub(this.bestNeighborPosition, this.position);
     const distanceBestToDog = this.bestNeighborPosition.dist(dog.position);
     const distanceToBest = this.bestNeighborPosition.dist(this.position);
     selfishAttractionToBest.setMag(SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_OTHER_SHEEP*SHEEP_SIGHT_FOR_OTHER_SHEEP))));
-    this.position.add(selfishAttractionToBest);
+
+    let velocity = selfishAttractionToBest;
 
     //Dog Repulsion
     let dogRepulsion = p5.Vector.sub(this.position, dog.position);
     const dogRepulstionMagnitude = SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_DOG*SHEEP_SIGHT_FOR_DOG)));
     dogRepulsion.setMag(dogRepulstionMagnitude);
-    this.position.add(dogRepulsion);
+    velocity.add(dogRepulsion);
 
     // Sheep Repulsion
     for (let sheep of allSheep){
@@ -86,12 +81,35 @@ class Sheep {
         const distanceToSheep = sheep.position.dist(this.position);
         const sheepRepulsion = p5.Vector.sub(this.position, sheep.position);
         sheepRepulsion.setMag(SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToSheep*distanceToSheep/(CIRCLE_SIZE*CIRCLE_SIZE))));
-        this.position.add(sheepRepulsion);
+        velocity.add(sheepRepulsion);
       }
     }
+
+    for (let obstacle of obstacles){
+      const op = this.orthogonalProjection(obstacle.start, obstacle.end, this.position);
+      const distanceToObstacle = op.dist(this.position);
+      const obstacleRepulsion = p5.Vector.sub(this.position, op);
+      obstacleRepulsion.setMag(SHEEP_VELOCITY/(distanceToObstacle-CIRCLE_SIZE));
+      velocity.add(obstacleRepulsion);
+    }
+
+    if(velocity.mag > SHEEP_VELOCITY){
+      velocity.setMag(SHEEP_VELOCITY)
+    }
+    this.position.add(velocity)
   }
 
-  checkCollision(){
+  orthogonalProjection(a, b, p) {    
+    const d1 = p5.Vector.sub(b, a);
+    const d2 = p5.Vector.sub(p, a);
+    const l1 = d1.mag();
+    
+    const dotp = constrain(d2.dot(d1.normalize()), 0, l1);
+        
+    return p5.Vector.add(a, d1.mult(dotp))
+  }
+
+  checkCollision(obstacles){
     if(this.position.x + CIRCLE_SIZE/2 > CANVAS_WIDTH){
       this.position.x = CANVAS_WIDTH - CIRCLE_SIZE/2;
     }
@@ -106,10 +124,10 @@ class Sheep {
     }
   }
 
-  run(allSheep, dog){
-    this.bestNeighborPosition = this.nearestBestNeighbor(allSheep, dog)
-    this.move(allSheep);
-    this.checkCollision();
+  run(allSheep, dog, obstacles){
+    this.bestNeighborPosition = this.nearestBestNeighbor(allSheep, dog, obstacles)
+    this.move(allSheep, obstacles);
+    this.checkCollision(obstacles);
     this.render();
   }
 }
@@ -123,11 +141,50 @@ class Herd {
     this.sheep.push(s);
   }
 
-  run(dog){
+  run(dog, obstacles){
     for (let s of this.sheep) {
-      s.run(this.sheep, dog);  // Passing the entire list of boids to each boid individually
+      s.run(this.sheep, dog, obstacles);  // Passing the entire list of boids to each boid individually
     }
   }
+}
+
+const intersect = (x1, y1, x2, y2, x3, y3, x4, y4) => {
+  let uA,uB;
+  let den,numA,numB;
+
+  den  = (y4-y3) * (x2-x1) - (x4-x3) * (y2-y1);
+  numA = (x4-x3) * (y1-y3) - (y4-y3) * (x1-x3);
+  numB = (x2-x1) * (y1-y3) - (y2-y1) * (x1-x3);
+  
+
+  //Coincident? - If true, displays intersection in center of line segment
+   if (abs(numA) == 0 && abs(numB) == 0 && abs(den) == 0) {
+      return(true);
+   }
+
+   //Parallel? - No intersection
+   if (abs(den) == 0) {
+      return(false);
+   }
+
+   //Intersection?
+   uA = numA / den;
+   uB = numB / den;
+  
+   //If both lie w/in the range of 0 to 1 then the intersection point is within both line segments.
+   if (uA < 0 || uA > 1 || uB < 0 || uB > 1) {
+      return(false);
+   }
+
+   return(true);
+}
+const obstacleInbetween = (sheep1, sheep2, obstacles) => {
+  for(let obstacle of obstacles){
+    if(intersect(sheep1.position.x, sheep1.position.y, sheep2.position.x, sheep2.position.y, obstacle.start.x, obstacle.start.y, obstacle.end.x, obstacle.end.y)){
+      return true;
+    }
+  }
+  return false;
 }
 
 class Dog {
@@ -164,11 +221,24 @@ class Dog {
   }
 }
 
+class Obstacle{
+  
+  constructor(x1, y1, x2, y2){
+    this.start = createVector(x1, y1);
+    this.end = createVector(x2, y2);
+  }
 
+  render(){
+    let c = color('blue');
+    fill(c);
+    line(this.start.x , this.start.y, this.end.x, this.end.y);
+  }
+}
 
 
 let herd;
 let dog;
+let obstacles = [];
 
 function setup() {
   // put setup code here
@@ -176,19 +246,28 @@ function setup() {
 
   herd = new Herd();
   for (let i = 0; i < N_SHEEP; i++) {
+    // s= new Sheep(250, 250, i);
     s = new Sheep(Math.random()*(CANVAS_WIDTH), Math.random()*CANVAS_HEIGHT, i);
     herd.addSheep(s);
   }
 
   dog = new Dog(Math.random()*(CANVAS_WIDTH), Math.random()*CANVAS_HEIGHT)
 
+  obstacles.push(new Obstacle(-500, 100, 200, 100))
+  obstacles.push(new Obstacle(250, 100, 1000, 100))
+  // obstacles.push(new Obstacle(300, 100, 20, 200))
+
 }
 
 function draw() {
   // put drawing code here
   background(200);
-  herd.run(dog);
+  herd.run(dog, obstacles);
   dog.run();
+
+  for(let obstacle of obstacles){
+    obstacle.render();
+  }
 }
 
 function keyPressed() {
