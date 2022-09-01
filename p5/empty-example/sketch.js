@@ -234,7 +234,7 @@ class Dog {
   calculateFitness(){
     this.fitness = 0;
     for(let sheep of herd.sheep){
-      const dist = Math.floor(sheep.position.dist(goal));
+      const dist = Math.floor(sheep.position.dist(goal)/herd.sheep.length);
       this.fitness += dist;
     }
   }
