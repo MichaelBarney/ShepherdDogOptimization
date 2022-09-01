@@ -2,8 +2,8 @@
 const CANVAS_HEIGHT = 500;
 const CANVAS_WIDTH = 500;
 
-const N_SHEEP = 10;
-const CIRCLE_SIZE = 20;
+const N_SHEEP = 100;
+const CIRCLE_SIZE = 10;
 
 const SHEEP_SIGHT_FOR_DOG = 150;
 const SHEEP_SIGHT_FOR_OTHER_SHEEP = 150;
@@ -298,7 +298,8 @@ function setup() {
   // obstacles.push(new Obstacle(-500, 100, 200, 100))
   // obstacles.push(new Obstacle(250, 100, 1000, 100))
 
-  goal = createVector(450,450)
+
+  goal = createVector(CIRCLE_SIZE + Math.random()*(CANVAS_WIDTH - CIRCLE_SIZE), CIRCLE_SIZE + Math.random()*(CANVAS_HEIGHT - CIRCLE_SIZE))
 }
 
 function draw() {
@@ -309,7 +310,7 @@ function draw() {
   circle(goal.x, goal.y, CIRCLE_SIZE*2)
   fill(0)
   text(`Fitness: ${dog.fitness}`, 20, 20)
-  
+
   herd.run(dog, obstacles);
   dog.run();
 
