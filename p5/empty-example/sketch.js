@@ -2,7 +2,7 @@
 const CANVAS_HEIGHT = 500;
 const CANVAS_WIDTH = 500;
 
-const N_SHEEP = 20;
+const N_SHEEP = 10;
 const CIRCLE_SIZE = 20;
 
 const SHEEP_SIGHT_FOR_DOG = 150;
@@ -21,7 +21,7 @@ class Sheep {
   }
 
   render(){
-    let c = color('white');
+    let c = color(this.position.dist(this.centerOfMassPosition)*5);
     if(this.position.dist(dog.position) < SHEEP_SIGHT_FOR_DOG){
       // c = color('green');
     }
@@ -107,12 +107,13 @@ class Sheep {
     // Center of Mass Attraction
     let centerOfMassAttraction = p5.Vector.sub(this.position, this.centerOfMassPosition);
     const distanceToCenterOfMass = this.centerOfMassPosition.dist(this.position);
-    const centerOfMassAttractionMagnitude = SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToCenterOfMass*distanceToCenterOfMass/(SHEEP_SIGHT_FOR_OTHER_SHEEP*SHEEP_SIGHT_FOR_OTHER_SHEEP)));
+    const centerOfMassAttractionMagnitude = SHEEP_VELOCITY/(1 + Math.pow(Math.E, -(distanceToCenterOfMass - SHEEP_VELOCITY/2)))
     centerOfMassAttraction.setMag(-centerOfMassAttractionMagnitude/10);
     this.velocity.add(centerOfMassAttraction);
 
     // Obstacle Repulstion
     for (let obstacle of obstacles){
+
       const op = this.orthogonalProjection(obstacle.start, obstacle.end, this.position);
       const distanceToObstacle = op.dist(this.position);
       const obstacleRepulsion = p5.Vector.sub(this.position, op);
@@ -218,13 +219,24 @@ const obstacleInbetween = (sheep1, sheep2, obstacles) => {
 class Dog {
   constructor(x, y){
     this.position = createVector(x, y);
+    this.fitness = 0;
   }
 
   render(){
+    this.calculateFitness();
+
     let c = color('red');
     fill(c);
     stroke(0)
     circle(this.position.x, this.position.y, CIRCLE_SIZE)
+  }
+
+  calculateFitness(){
+    this.fitness = 0;
+    for(let sheep of herd.sheep){
+      const dist = Math.floor(sheep.position.dist(goal));
+      this.fitness += dist;
+    }
   }
 
   checkKeys(){
@@ -268,6 +280,8 @@ let herd;
 let dog;
 let obstacles = [];
 
+let goal;
+
 function setup() {
   // put setup code here
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -281,15 +295,21 @@ function setup() {
 
   dog = new Dog(Math.random()*(CANVAS_WIDTH), Math.random()*CANVAS_HEIGHT)
 
-  obstacles.push(new Obstacle(-500, 100, 200, 100))
-  obstacles.push(new Obstacle(250, 100, 1000, 100))
-  // obstacles.push(new Obstacle(300, 100, 20, 200))
+  // obstacles.push(new Obstacle(-500, 100, 200, 100))
+  // obstacles.push(new Obstacle(250, 100, 1000, 100))
 
+  goal = createVector(450,450)
 }
 
 function draw() {
   // put drawing code here
   background(200);
+
+  fill(color('green'))
+  circle(goal.x, goal.y, CIRCLE_SIZE*2)
+  fill(0)
+  text(`Fitness: ${dog.fitness}`, 20, 20)
+  
   herd.run(dog, obstacles);
   dog.run();
 
