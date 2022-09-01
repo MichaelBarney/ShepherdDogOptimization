@@ -107,7 +107,7 @@ class Sheep {
     // Center of Mass Attraction
     let centerOfMassAttraction = p5.Vector.sub(this.position, this.centerOfMassPosition);
     const distanceToCenterOfMass = this.centerOfMassPosition.dist(this.position);
-    const centerOfMassAttractionMagnitude = SHEEP_VELOCITY/(1 + Math.pow(Math.E, -(distanceToCenterOfMass - SHEEP_VELOCITY/2)))
+    const centerOfMassAttractionMagnitude = SHEEP_VELOCITY/(1 + Math.pow(Math.E, -(distanceToCenterOfMass/distanceToDog - SHEEP_VELOCITY/2)))
     centerOfMassAttraction.setMag(-centerOfMassAttractionMagnitude/10);
     this.velocity.add(centerOfMassAttraction);
 
