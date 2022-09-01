@@ -16,6 +16,8 @@ class Sheep {
     this.position = createVector(x, y);
     this.index = index;
     this.bestNeighborPosition = this.position;
+    this.centerOfMassPosition = this.position;
+    this.velocity = createVector(0, 0);
   }
 
   render(){
@@ -28,8 +30,10 @@ class Sheep {
     circle(this.position.x, this.position.y, CIRCLE_SIZE)
 
     stroke(175)
-    line(this.position.x, this.position.y, this.bestNeighborPosition.x, this.bestNeighborPosition.y)
+    // line(this.position.x, this.position.y, this.bestNeighborPosition.x, this.bestNeighborPosition.y)
 
+    stroke(0)
+    // line(this.position.x, this.position.y, this.centerOfMassPosition.x, this.centerOfMassPosition.y)
     noFill();
     // circle(this.position.x, this.position.y, SHEEP_SIGHT_FOR_DOG*2)
   }
@@ -59,21 +63,36 @@ class Sheep {
     return bestSheepNeighbor.position;
   }
 
+  getCenterOfMassPosition(allSheep, obstacles){
+    let sum = createVector(0,0);
+    let count = 0;
+    for (let sheep of allSheep){
+      if(!obstacleInbetween(this, sheep, obstacles) && sheep.position.dist(this.position) < SHEEP_SIGHT_FOR_OTHER_SHEEP){
+        sum.add(sheep.position)
+        count += 1;
+      }
+    }
+    sum.x = sum.x / count;
+    sum.y = sum.y / count;
+    return sum;
+  }
+
   move(allSheep, obstacles){
     const distanceToDog = this.position.dist(dog.position);
 
+    this.velocity = createVector(0,0)
+    // Selfish Attraction to Best
     let selfishAttractionToBest = p5.Vector.sub(this.bestNeighborPosition, this.position);
     const distanceBestToDog = this.bestNeighborPosition.dist(dog.position);
     const distanceToBest = this.bestNeighborPosition.dist(this.position);
     selfishAttractionToBest.setMag(SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_OTHER_SHEEP*SHEEP_SIGHT_FOR_OTHER_SHEEP))));
-
-    let velocity = selfishAttractionToBest;
+    this.velocity.add(selfishAttractionToBest);
 
     //Dog Repulsion
     let dogRepulsion = p5.Vector.sub(this.position, dog.position);
     const dogRepulstionMagnitude = SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToDog*distanceToDog/(SHEEP_SIGHT_FOR_DOG*SHEEP_SIGHT_FOR_DOG)));
     dogRepulsion.setMag(dogRepulstionMagnitude);
-    velocity.add(dogRepulsion);
+    this.velocity.add(dogRepulsion);
 
     // Sheep Repulsion
     for (let sheep of allSheep){
@@ -81,22 +100,30 @@ class Sheep {
         const distanceToSheep = sheep.position.dist(this.position);
         const sheepRepulsion = p5.Vector.sub(this.position, sheep.position);
         sheepRepulsion.setMag(SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToSheep*distanceToSheep/(CIRCLE_SIZE*CIRCLE_SIZE))));
-        velocity.add(sheepRepulsion);
+        this.velocity.add(sheepRepulsion);
       }
     }
 
+    // Center of Mass Attraction
+    let centerOfMassAttraction = p5.Vector.sub(this.position, this.centerOfMassPosition);
+    const distanceToCenterOfMass = this.centerOfMassPosition.dist(this.position);
+    const centerOfMassAttractionMagnitude = SHEEP_VELOCITY*Math.pow(Math.E, -(distanceToCenterOfMass*distanceToCenterOfMass/(SHEEP_SIGHT_FOR_OTHER_SHEEP*SHEEP_SIGHT_FOR_OTHER_SHEEP)));
+    centerOfMassAttraction.setMag(-centerOfMassAttractionMagnitude/10);
+    this.velocity.add(centerOfMassAttraction);
+
+    // Obstacle Repulstion
     for (let obstacle of obstacles){
       const op = this.orthogonalProjection(obstacle.start, obstacle.end, this.position);
       const distanceToObstacle = op.dist(this.position);
       const obstacleRepulsion = p5.Vector.sub(this.position, op);
       obstacleRepulsion.setMag(SHEEP_VELOCITY/(distanceToObstacle-CIRCLE_SIZE));
-      velocity.add(obstacleRepulsion);
+      this.velocity.add(obstacleRepulsion);
     }
 
-    if(velocity.mag > SHEEP_VELOCITY){
-      velocity.setMag(SHEEP_VELOCITY)
+    if(this.velocity.mag > SHEEP_VELOCITY){
+      this.velocity.setMag(SHEEP_VELOCITY)
     }
-    this.position.add(velocity)
+    this.position.add(this.velocity)
   }
 
   orthogonalProjection(a, b, p) {    
@@ -125,7 +152,8 @@ class Sheep {
   }
 
   run(allSheep, dog, obstacles){
-    this.bestNeighborPosition = this.nearestBestNeighbor(allSheep, dog, obstacles)
+    this.bestNeighborPosition = this.nearestBestNeighbor(allSheep, dog, obstacles);
+    this.centerOfMassPosition = this.getCenterOfMassPosition(allSheep, obstacles);
     this.move(allSheep, obstacles);
     this.checkCollision(obstacles);
     this.render();
