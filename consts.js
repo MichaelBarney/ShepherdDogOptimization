@@ -1,0 +1,13 @@
+const CANVAS_HEIGHT = 500;
+const CANVAS_WIDTH = 500;
+
+const N_SHEEP = 10;
+const CIRCLE_SIZE = 20;
+
+const SHEEP_SIGHT_FOR_DOG = 150;
+const SHEEP_SIGHT_FOR_OTHER_SHEEP = 150;
+
+const SHEEP_VELOCITY = 1;
+const DOG_VELOCITY = 3;
+
+const FRAME_RATE = 30;
