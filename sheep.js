@@ -53,30 +53,40 @@ class Sheep {
   move(herd, dog) {
     this.velocity = createVector(0, 0);
 
-    const SVPredator = calculateSV(dog.position, herd);
-    const predatorRepulsion = p5.Vector.sub(dog.position, this.position);
+    // const SVPredator = calculateSV(dog.position, herd);
+    // const predatorRepulsion = p5.Vector.sub(dog.position, this.position);
     const distanceToDog = this.position.dist(dog.position) / CANVAS_HEIGHT;
-    predatorRepulsion.mult(1 / (1 - distanceToDog));
-    line(
-      this.position.x,
-      this.position.y,
-      predatorRepulsion.x,
-      predatorRepulsion.y
-    );
+    // predatorRepulsion.mult(-distanceToDog);
+
+    // let predatorRepulsion = p5.Vector.sub(this.position, dog.position);
+    // const dogRepulstionMagnitude =
+    //   SHEEP_VELOCITY *
+    //   Math.pow(Math.E, -((distanceToDog * distanceToDog) / (100 * 100)));
+    // predatorRepulsion.setMag(dogRepulstionMagnitude);
+    // this.position.add(predatorRepulsion);
+
+    // let predatorRepulsion = p5.Vector.sub(this.position, dog.position);
+    // predatorRepulsion.mult(2 * selfishness(this.position, dog.position));
+    // this.velocity.add(predatorRepulsion);
+
+    // line(
+    //   this.position.x,
+    //   this.position.y,
+    //   predatorRepulsion.x,
+    //   predatorRepulsion.y
+    // );
 
     if (this.status == "l") {
       if (calculateSV(this.position, herd, herd, this.status) == 1) {
         // Seemingly Cooperative Leadership
-        console.log("coop");
         const SVPredator = calculateSV(dog.position, herd);
         this.velocity = p5.Vector.sub(dog.position, this.position);
-        this.velocity = this.velocity.mult(
+        this.velocity.mult(
           -2 *
             Math.random() *
             selfishness(this.position, dog.position, SVPredator)
         );
       } else {
-        console.log("Selfish");
         // Openly Selfish Leadership
         this.velocity = p5.Vector.sub(herd.bestPosition, this.position);
         this.velocity = this.velocity.mult(
@@ -143,9 +153,7 @@ class Sheep {
       ).mult(2);
     }
 
-    this.velocity.add(predatorRepulsion);
-
-    this.velocity.setMag(SHEEP_VELOCITY);
+    this.velocity.mult(SHEEP_VELOCITY_MULT);
     this.position.add(this.velocity);
   }
 
@@ -223,7 +231,6 @@ class Herd {
       if (sheepF < this.fBest) {
         this.fBest = sheepF;
         this.bestPosition = s.position;
-        console.log(this.fBest);
       }
 
       // Get worstF
@@ -235,7 +242,6 @@ class Herd {
     this.meanSV = SVSum / this.sheep.length;
     this.centerOfMass = p5.Vector.div(SVDistanceSum, SVSum);
   }
-
   run(dog) {
     this.calculateSVs();
     for (let s of this.sheep) {

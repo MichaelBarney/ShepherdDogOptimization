@@ -23,6 +23,8 @@ class Dog {
   }
 
   move(herd) {
+    let chosenSheep = null;
+
     // Original Prey Selection
     // let attrs = [];
     // let attrSum = 0;
@@ -44,7 +46,6 @@ class Dog {
     //   )(0)
     // );
     // const dice = Math.random();
-    // let chosenSheep = null;
     // for (let i = 0; i < N_SHEEP; i++) {
     //   if (dice < cumultProbabilities[i]) {
     //     chosenSheep = herd.sheep[i];
@@ -52,7 +53,6 @@ class Dog {
     //   }
     // }
 
-    let chosenSheep = null;
     // let worstSV = 1;
     // for (const sheep of herd.sheep) {
     //   const SV = calculateSV(sheep.position, herd, sheep.status);
@@ -78,13 +78,20 @@ class Dog {
       chosenSheep.position.y
     );
 
+    let velocity = p5.Vector.sub(chosenSheep.position, this.position).mult(5);
+
+    for (let sheep of herd.sheep) {
+      let sheepRepulsion = p5.Vector.sub(this.position, sheep.position);
+
+      sheepRepulsion.mult(
+        2 * Math.random() * selfishness(this.position, sheep.position)
+      );
+      velocity.add(sheepRepulsion / N_SHEEP);
+    }
+
     // const chosenSheep = herd.leader;
 
-    const velocity = p5.Vector.sub(chosenSheep.position, this.position).mult(
-      2 * Math.random()
-    );
-
-    velocity.setMag(DOG_VELOCITY);
+    velocity.mult(DOG_VELOCITY_MULT);
 
     this.position.add(velocity);
   }
