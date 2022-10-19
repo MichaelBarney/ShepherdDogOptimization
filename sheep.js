@@ -46,11 +46,23 @@ class Sheep {
     else {
       this.status = "d";
     }
+    // this.status = "fs";
     return this.status;
   }
 
   move(herd, dog) {
     this.velocity = createVector(0, 0);
+
+    const SVPredator = calculateSV(dog.position, herd);
+    const predatorRepulsion = p5.Vector.sub(dog.position, this.position);
+    const distanceToDog = this.position.dist(dog.position) / CANVAS_HEIGHT;
+    predatorRepulsion.mult(1 / (1 - distanceToDog));
+    line(
+      this.position.x,
+      this.position.y,
+      predatorRepulsion.x,
+      predatorRepulsion.y
+    );
 
     if (this.status == "l") {
       if (calculateSV(this.position, herd, herd, this.status) == 1) {
@@ -73,17 +85,13 @@ class Sheep {
       }
     } else if (this.status == "fd") {
       // Nearest Neighbor Movement Rule
-
       const leaderSV = calculateSV(herd.leader.position, herd, this.status);
       let leaderAttraction = p5.Vector.sub(herd.leader.position, this.position);
-
       leaderAttraction = leaderAttraction.mult(
         Math.random() *
           selfishness(this.position, herd.leader.position, leaderSV)
       );
-
       const bestNeighbor = this.nearestBestNeighbor(herd);
-
       if (bestNeighbor) {
         const bestNeighborSV = calculateSV(
           bestNeighbor.position,
@@ -98,7 +106,6 @@ class Sheep {
           Math.random() *
             selfishness(this.position, bestNeighbor.position, bestNeighborSV)
         );
-
         this.velocity = p5.Vector.add(
           leaderAttraction,
           bestNeighborAttraction
@@ -106,8 +113,12 @@ class Sheep {
       } else {
         this.velocity = leaderAttraction;
       }
+      // this.velocity.setMag(SHEEP_VELOCITY);
+      // this.velocity.add(predatorRepulsion);
     } else if (this.status == "fs") {
       // Crowded Horizon Movement
+      fill(color("orange"));
+      circle(herd.centerOfMass.x, herd.centerOfMass.y, CIRCLE_SIZE / 3);
       const centerOfMassSV = calculateSV(herd.centerOfMass, herd);
       this.velocity = p5.Vector.sub(herd.centerOfMass, this.position);
       this.velocity.mult(
@@ -131,6 +142,9 @@ class Sheep {
         attractionToRandom
       ).mult(2);
     }
+
+    this.velocity.add(predatorRepulsion);
+
     this.velocity.setMag(SHEEP_VELOCITY);
     this.position.add(this.velocity);
   }
@@ -219,7 +233,7 @@ class Herd {
     }
 
     this.meanSV = SVSum / this.sheep.length;
-    this.centerOfMass = p5.Vector.div(SVDistanceSum, this.meanSV);
+    this.centerOfMass = p5.Vector.div(SVDistanceSum, SVSum);
   }
 
   run(dog) {

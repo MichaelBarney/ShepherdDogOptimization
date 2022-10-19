@@ -23,43 +23,62 @@ class Dog {
   }
 
   move(herd) {
-    let attrs = [];
-    let attrSum = 0;
-    for (const s of herd.sheep) {
-      const distanceToDog =
-        this.position.dist(s.position) / (CANVAS_HEIGHT / 2);
-      const attr =
-        1 -
-        calculateSV(s.position, herd) *
-          Math.pow(Math.E, -distanceToDog * distanceToDog);
-      attrs.push(attr);
-      attrSum += attr;
-    }
-    const probabilities = attrs.map((attr) => attr / attrSum);
-    const cumultProbabilities = probabilities.map(
-      (
-        (sum) => (value) =>
-          (sum += value)
-      )(0)
-    );
-
-    const dice = Math.random();
+    // Original Prey Selection
+    // let attrs = [];
+    // let attrSum = 0;
+    // for (const s of herd.sheep) {
+    //   const distanceToDog =
+    //     this.position.dist(s.position) / (CANVAS_HEIGHT / 2);
+    //   const attr =
+    //     1 -
+    //     calculateSV(s.position, herd) *
+    //       Math.pow(Math.E, -distanceToDog * distanceToDog);
+    //   attrs.push(attr);
+    //   attrSum += attr;
+    // }
+    // const probabilities = attrs.map((attr) => attr / attrSum);
+    // const cumultProbabilities = probabilities.map(
+    //   (
+    //     (sum) => (value) =>
+    //       (sum += value)
+    //   )(0)
+    // );
+    // const dice = Math.random();
+    // let chosenSheep = null;
+    // for (let i = 0; i < N_SHEEP; i++) {
+    //   if (dice < cumultProbabilities[i]) {
+    //     chosenSheep = herd.sheep[i];
+    //     break;
+    //   }
+    // }
 
     let chosenSheep = null;
-    for (let i = 0; i < N_SHEEP; i++) {
-      if (dice < cumultProbabilities[i]) {
-        chosenSheep = herd.sheep[i];
-        break;
-      }
-    }
-
-    // let chosenSheep = null;
-    // let lowestSV = Infinity;
+    // let worstSV = 1;
     // for (const sheep of herd.sheep) {
-    //   if (calculateSV(sheep.position, herd, sheep.status) < lowestSV) {
+    //   const SV = calculateSV(sheep.position, herd, sheep.status);
+    //   if (SV < worstSV) {
+    //     worstSV = SV;
     //     chosenSheep = sheep;
     //   }
     // }
+
+    let biggestDistance = 0;
+    for (const sheep of herd.sheep) {
+      const distanceToBest = sheep.position.dist(herd.bestPosition);
+      if (distanceToBest > biggestDistance) {
+        biggestDistance = distanceToBest;
+        chosenSheep = sheep;
+      }
+    }
+
+    line(
+      this.position.x,
+      this.position.y,
+      chosenSheep.position.x,
+      chosenSheep.position.y
+    );
+
+    // const chosenSheep = herd.leader;
 
     const velocity = p5.Vector.sub(chosenSheep.position, this.position).mult(
       2 * Math.random()

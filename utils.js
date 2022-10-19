@@ -1,9 +1,9 @@
 const f = (position) => {
-  // const optimal = createVector(0, 0);
+  const optimal = createVector(0, 0);
   // const optimal = createVector(100, 100);
   // return position.dist(optimal);
-  // const ackley = objective(position.x, position.y);
-  // return ackley;
+  const ackley = objective(position.x, position.y);
+  return ackley;
 };
 function objective(x, y) {
   return (
@@ -16,7 +16,7 @@ function objective(x, y) {
 }
 
 const selfishness = (aPosition, bPosition, SV) => {
-  const distance = aPosition.dist(bPosition);
+  const distance = aPosition.dist(bPosition) / CANVAS_HEIGHT;
   if (SV) {
     return SV * Math.pow(Math.E, -1 * (distance * distance));
   } else {

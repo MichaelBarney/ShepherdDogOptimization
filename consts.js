@@ -1,7 +1,7 @@
 const CANVAS_HEIGHT = 500;
 const CANVAS_WIDTH = 500;
 
-const N_SHEEP = 10;
+const N_SHEEP = 2;
 const CIRCLE_SIZE = 20;
 
 const SHEEP_SIGHT_FOR_DOG = 150;

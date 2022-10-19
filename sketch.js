@@ -5,7 +5,7 @@ let dog;
 
 function setup() {
   createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-  frameRate(5);
+  frameRate(FRAME_RATE);
   // 1 - Initialize Population
   goal = createVector(0, 0);
   dog = new Dog(0, 0);
